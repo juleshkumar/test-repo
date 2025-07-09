@@ -1,10 +1,28 @@
-   sudo yum update -y
+manual installation comands 
+
+sudo yum update -y
  sudo yum install httpd -y
  sudo systemctl enable httpd
 sudo systemctl start httpd
 sudo systemctl status httpd
 
+###############################################
+userdata section 
+#!/bin/bash
+# Update system packages
+yum update -y
 
+# Install Apache web server
+yum install -y httpd
+
+# Enable Apache to start on boot
+systemctl enable httpd
+
+# Start Apache service
+systemctl start httpd
+
+############################################
+volume mount points
 
 fdisk /dev/xvdf
 type m for help 

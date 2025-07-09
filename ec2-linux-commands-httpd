@@ -37,3 +37,14 @@ mkfs -t ext4 /dev/xvdf - this formates and makes volume ready to mount
   lsblk - to check all vollumes 
   df -h -- to check in use volumes 
   
+#######################################
+LAB
+
+1. create a ec2 with userdata to install httpd page
+2. create a directory and file with some data in it 
+3. take AMI of the server 
+4. after ami state changes available, launch a instance using that AMI 
+5. check HTTTPd and file data is replicated  or not 
+6. create a additional 10gb volume and attach to the second instance 
+7. use the given commands to mount volume to instance, check volume is attched or not using df -h command
+8. terminate both instances 

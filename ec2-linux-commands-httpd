@@ -1,0 +1,21 @@
+   sudo yum update -y
+ sudo yum install httpd -y
+ sudo systemctl enable httpd
+sudo systemctl start httpd
+sudo systemctl status httpd
+
+
+
+fdisk /dev/xvdf
+type m for help 
+type n for new partition creation 
+partition type primary so select p 
+first sector default 2048 simply press enter on keyboard
+last sector default simply press enter on keyboard
+press w to save and exit 
+mkfs -t ext4 /dev/xvdf - this formates and makes volume ready to mount
+ mkdir /tmp/testdisk -- to create directory for volume to mount
+  mount /dev/xvdf /tmp/testdisk/  --this mounts volume to created directory for use
+  lsblk - to check all vollumes 
+  df -h -- to check in use volumes 
+  

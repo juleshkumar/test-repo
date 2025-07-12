@@ -1,0 +1,33 @@
+(ls) - list the objects
+(ll) - list of objects
+(pwd) - present working directory
+(date) - show date and time of machine
+(touch) - just create file ex: touch textfile
+(mkdir) - create directory ex: mkdir text
+(vim) - creates file and goes into editing mode ex: vim textfile1
+(vi) - edits file ex: textfile
+(nano) - file editor with shortcuts ex: nano textfile
+(ctrl+l) - page down
+(clear) - clear screen
+(ctrl+shift+V) - paste copied content
+(history) -shows all executed commands
+(rm) - removes file
+(rm -rf) - removes directory
+(cp) - copies file or directory ex: cp filename location/path
+(mv) - moves file or directory ex: mv filename location/path
+(cat) - read file ex: cat filename
+(cd) - change directory
+(cd..) - exit directory or come out of present directory
+(ls -a) - shows hidden files or .files
+(sudo su-) - switches to root user
+(su) - switch user ex: su username
+(useradd) - create username ex: useradd username
+(passwd) - create password ex: passwd password
+(ctrl+d) - logouts from current session
+(cat /etc/os-release) - shows current system os version and name
+(chmod) - changes permission for file ex: chmod 777 filename (777 gives full permission to file)
+(chown) - changes ownership of the file ex: chown username filename
+(top) - shows the current operations in server 
+(rmdir) - remove directory
+(mv) - rename the file or folder ex: mv filename newname
+(grep) - to search with keyboard ex: ls | grep "file1"

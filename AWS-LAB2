@@ -1,0 +1,12 @@
+1. create VPC-1 2- public 2-private 2- route tables 1- iGW 1 - NAT gateway
+2. create vpc-2 2- public 2-private 2- route tables 1- iGW 1 - NAT gateway
+3. launch ec2 in vpc 1 and install httpd service in it using userdata
+4. create a ami back up for above created ec2
+5. launch a ec2 using that user data and check weather the backup is functional or not, check web page
+    create a addditional 10 gb volume and attach to the server and attach from inside also using given commands, if you enter dh -h command the added volume should be seen there
+6. terminate 2 ec2 after verification 
+7. create two different ec2 in 2 different vpc 1 and 2 
+8. try to communicate within these server - it wont work as they are separate networks 
+9. create peering connection between 2 vpc and add routes respectivly 
+10. test ec2 communication - only ping private ip dont use public ip
+11. terminate ec2's

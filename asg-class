@@ -1,0 +1,6 @@
+ec2 commands
+sudo yum install -y epel-release
+sudo yum install -y stress
+
+
+stress --cpu 1 --timeout 600

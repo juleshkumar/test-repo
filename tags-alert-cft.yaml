@@ -1,0 +1,166 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Mandatory Tag Enforcement using AWS Config and Lambda Notification'
+
+Parameters:
+  MandatoryTagKeys:
+    Type: CommaDelimitedList
+    Description: 'List of mandatory tag keys (comma separated)'
+    Default: 'Environment,Owner,Project,CostCenter'
+  NotificationEmail:
+    Type: String
+    Description: 'Email address to receive non-compliance notifications'
+    Default: 'your-email@example.com'
+
+Resources:
+  # SNS Topic for notifications
+  TagComplianceNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: 'TagComplianceNotification'
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref NotificationEmail
+
+  # IAM Role for Lambda
+  TagComplianceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: TagComplianceLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: !Ref TagComplianceNotificationTopic
+              - Effect: Allow
+                Action:
+                  - config:PutEvaluations
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+
+  # Lambda Function
+  TagComplianceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: 'TagComplianceNotifier'
+      Handler: index.lambda_handler
+      Role: !GetAtt TagComplianceLambdaRole.Arn
+      Runtime: python3.8
+      Timeout: 30
+      Environment:
+        Variables:
+          TOPIC_ARN: !Ref TagComplianceNotificationTopic
+      Code:
+        ZipFile: |
+          import boto3
+          import json
+          import os
+          
+          def lambda_handler(event, context):
+              print("Received event: " + json.dumps(event, indent=2))
+              
+              sns = boto3.client('sns')
+              config = boto3.client('config')
+              topic_arn = os.environ.get('TOPIC_ARN')
+              
+              invoking_event = json.loads(event['invokingEvent'])
+              configuration_item = invoking_event['configurationItem']
+              
+              required_tags = []
+              if 'ruleParameters' in event:
+                  rule_params = json.loads(event['ruleParameters'])
+                  required_tags = rule_params.get('tagKeys', '').split(',')
+              
+              resource_tags = configuration_item.get('tags', {})
+              missing_tags = [tag for tag in required_tags if tag and tag not in resource_tags]
+              
+              if missing_tags:
+                  message = f"""
+                  Resource created without mandatory tags:
+
+                  Resource Type: {configuration_item['resourceType']}
+                  Resource ID: {configuration_item['resourceId']}
+                  Missing Tags: {', '.join(missing_tags)}
+
+                  Please add the required tags to maintain compliance.
+                  """
+                  sns.publish(
+                      TopicArn=topic_arn,
+                      Message=message,
+                      Subject='AWS Resource Missing Mandatory Tags'
+                  )
+              
+              compliance_type = 'NON_COMPLIANT' if missing_tags else 'COMPLIANT'
+              evaluation = {
+                  'ComplianceResourceType': configuration_item['resourceType'],
+                  'ComplianceResourceId': configuration_item['resourceId'],
+                  'ComplianceType': compliance_type,
+                  'OrderingTimestamp': configuration_item['configurationItemCaptureTime']
+              }
+              
+              if 'resultToken' in event:
+                  config.put_evaluations(
+                      Evaluations=[evaluation],
+                      ResultToken=event['resultToken']
+                  )
+              
+              return evaluation
+
+  # Permission for AWS Config to invoke Lambda
+  ConfigLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt TagComplianceLambda.Arn
+      Principal: config.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  # AWS Config Rule to invoke Lambda
+  MandatoryTagsConfigRule:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      ConfigRuleName: 'mandatory-tags-rule'
+      Description: 'Checks if resources have all mandatory tags'
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceIdentifier: !GetAtt TagComplianceLambda.Arn
+        SourceDetails:
+          - EventSource: aws.config
+            MessageType: 'ConfigurationItemChangeNotification'
+      InputParameters:
+        tagKeys: !Join [",", !Ref MandatoryTagKeys]
+      MaximumExecutionFrequency: 'TwentyFour_Hours'
+      Scope:
+        ComplianceResourceTypes:
+          - 'AWS::EC2::Instance'
+          - 'AWS::EC2::Volume'
+          - 'AWS::S3::Bucket'
+          - 'AWS::RDS::DBInstance'
+          - 'AWS::Lambda::Function'
+          - 'AWS::DynamoDB::Table'
+
+Outputs:
+  NotificationTopicARN:
+    Description: 'ARN of the SNS topic for notifications'
+    Value: !Ref TagComplianceNotificationTopic
+  LambdaFunctionARN:
+    Description: 'ARN of the Lambda function'
+    Value: !GetAtt TagComplianceLambda.Arn
+  ConfigRuleName:
+    Description: 'Name of the Config rule'
+    Value: !Ref MandatoryTagsConfigRule
